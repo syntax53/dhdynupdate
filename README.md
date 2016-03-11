@@ -15,6 +15,7 @@ The `daemon` library **not** required (it's not supported under windows for obvi
 * Open an elevated command prompt to `C:\Python34\Scripts`
 * Execute `pip install netifaces`
 * Execute `pip install requests`
+* Execute `pip install lockfile`
 * Create a folder where you want to put dhdynupdate (I chose `C:\Python34\_dhdynupdate`) and put the files in there.
 
 # Configuration
