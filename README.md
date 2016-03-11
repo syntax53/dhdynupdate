@@ -3,6 +3,7 @@ This is a windows fork of (https://github.com/ttelford/dhdynupdate).
 
 ## Features Added
 
+* Windows Support.
 * Ability to lookup your external IP and send that to dreamhost.
 
 ## Dependencies
