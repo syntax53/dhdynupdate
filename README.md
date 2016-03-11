@@ -1,8 +1,12 @@
 # DreamHost Dynamic DNS Record Update
 This is a windows fork of (https://github.com/ttelford/dhdynupdate).
 
+## Features Added
+
+* Ability to lookup your external IP and send that to dreamhost.
+
 ## Dependencies
-The `daemon` library **not** required (it's not supported under windows for obvious reasons).  You can setup a scheduled task in windows instead.
+The `daemon` library **not** required as it is with the linux version (it's not supported under windows).  You can setup a scheduled task in windows instead.
 
 * [`python`](https://www.python.org/downloads/windows/)
     *  Python **3.4** is requred (as of this writing) because netifaces doesn't support 3.5.
