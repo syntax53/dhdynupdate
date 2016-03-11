@@ -5,18 +5,16 @@ This is a windows fork of (https://github.com/ttelford/dhdynupdate).
 The `daemon` library **not** required (it's not supported under windows for obvious reasons).  You can setup a scheduled task in windows instead.
 
 * [`python`](https://www.python.org/downloads/windows/)
-    *  Python **3.4** is requred (as of this writing) because 
+    *  Python **3.4** is requred (as of this writing) because netifaces doesn't support 3.5.
 * [`netifaces`](https://pypi.python.org/pypi/netifaces)
-    * Available in Debian/Ubuntu as `python3-netifaces`
 * [`requests`](http://docs.python-requests.org/en/latest/)
-    * Available in Debian/Ubuntu as `python3-requests`
 
 # Installation
 * Install Python (assumingly to C:\Python34)
 * Open an elevated command prompt to `C:\Python34\Scripts`
 * Execute `pip install netifaces`
 * Execute `pip install requests`
-* Create a folder where you want to put dhdynupdate (I chose `C:\Python34\_dhdynupdate`). And put the files in there.
+* Create a folder where you want to put dhdynupdate (I chose `C:\Python34\_dhdynupdate`) and put the files in there.
 
 # Configuration
 * Get your interface's GUID...
