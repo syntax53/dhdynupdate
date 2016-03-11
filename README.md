@@ -8,6 +8,7 @@ The `daemon` library **not** required (it's not supported under windows for obvi
     *  Python **3.4** is requred (as of this writing) because netifaces doesn't support 3.5.
 * [`netifaces`](https://pypi.python.org/pypi/netifaces)
 * [`requests`](http://docs.python-requests.org/en/latest/)
+* [`lockfile`](https://pypi.python.org/pypi/lockfile)
 
 # Installation
 * Install Python (assumingly to C:\Python34)
@@ -22,7 +23,7 @@ The `daemon` library **not** required (it's not supported under windows for obvi
     * Execute `import netifaces`
     * Execute `netifaces.interfaces()` to get a list of all of your interface GUIDs.
         * You can execute `netifaces.ifaddresses('{GUID}')` on each listed guid to find the one you want.  It will return the MAC and IP, among other properties.
-        * You can also browse to the following registry key which may be easier: `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkCards`. Verify it's the correct GUID with `netifaces.ifaddresses('{GUID}')`.
+        * You can also browse to the following registry key which may be easier: `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkCards`. Verify you have the correct GUID (and the library is working) with `netifaces.ifaddresses('{GUID}')`.
 * Open `dhdynupdate.conf` and put your GUID next to the AF_INET entry.
 * Specify the location of the logfile (`C:\Python34\_dhdynupdate\log\dhdynupdate.log` for me).  Make sure the folder/file is writable.
 * See https://github.com/ttelford/dhdynupdate for getting your API key.
@@ -40,3 +41,7 @@ The `daemon` library **not** required (it's not supported under windows for obvi
 	                        DEBUG
 	  -c config, --config config
 	                        Configuration name
+
+* Execute `C:\Python34\python.exe C:\Python34\_dhdynupdate\dhdynupdate.py -h` just to make sure it executes.
+* Execute `C:\Python34\python.exe C:\Python34\_dhdynupdate\dhdynupdate.py -c your.config.section.name` to update.
+* Normally very little information is written to the logfile.  Add ` --debug DEBUG` to the end of your command to see everything it's doing.
