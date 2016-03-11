@@ -54,3 +54,5 @@ The `daemon` library **not** required as it is with the linux version (it's not 
 * Execute `C:\Python34\python.exe C:\Python34\_dhdynupdate\dhdynupdate.py -h` just to make sure it executes.
 * Execute `C:\Python34\python.exe C:\Python34\_dhdynupdate\dhdynupdate.py -c your.config.section.name` to update.
 * Normally very little information is written to the logfile.  Add ` --debug DEBUG` to the end of your command to see everything it's doing.
+* I typically run on the INFO logging level, and have my scheduled task to execute this:
+    * `C:\Python34\python.exe C:\Python34\_dhdynupdate\dhdynupdate.py -c mydomain.com --debug INFO`
