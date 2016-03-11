@@ -30,11 +30,12 @@
 
 import argparse
 import configparser
-import daemon
 import lockfile
 import logging
 import netifaces
 import os
+if not os.name == 'nt':
+    import daemon
 import time
 import sys
 from dhdns import dhdns
@@ -78,12 +79,16 @@ def main(argv=None):
                             required=False, metavar="config",
                             dest="config_name",
                             help="Configuration name")
+    cmd_parser.add_argument("-e", "--external", action='store_true',
+                            default=True, required=False,
+                            dest="external_ip",
+                            help="Use external address instead of internal")
     args = cmd_parser.parse_args()
 
     # read configuration from file
     config = configparser.ConfigParser()
     try:
-        config.read("/etc/dhdynupdate.conf")
+        config.read(os.path.dirname(os.path.realpath(sys.argv[0])) + "\dhdynupdate.conf")
     except:
         print("Error reading config file!")
         sys.exit(3)
@@ -107,6 +112,7 @@ def main(argv=None):
         configured_interfaces = {}
         api_key = config[args.config_name]["api_key"]
         api_url = config["Global"]["api_url"]
+        external_url = config["Global"]["external_url"]
         local_hostname = config[args.config_name]["local_hostname"]
         logfile = config["Global"]["log_file"]
         update_interval = int(config["Global"]["update_interval"])
@@ -131,37 +137,40 @@ def main(argv=None):
 #   When in doubt, do not run as a daemon. Daemon keeps stack traces from being
 #   printed, and you're left wondering why the dæmon is quitting.
     if args.daemonize:
-        with daemon.DaemonContext(pidfile=lockfile.FileLock(pid_file)):
-            # set up logging; it's much easier to just set it up within the
-            # DaemonContext. Outside the daemoncontext requires a lot more work...
-            setup_logger(logfile, log_level)
-            logging.warn("Starting dhdynupdater...")
-            try:
-                pf = open(pid_file, 'w')
-                pf.write("%s\n" % (os.getpid()))
-                pf.close()
-            except:
-                logging.critical("Exception in setting up pidfile: %s" % (sys.exc_info()[0]))
-                sys.exit(6)
-            try:
-                dh_dns = dhdns(api_key, api_url, local_hostname, configured_interfaces)
-            except:
-                logging.critical("Exception in creating dh_dns: %s" % (sys.exc_info()[0]))
-            while True:
-                logging.warn("Starting dhdynupdater main loop...")
+        if os.name == 'nt':
+            logging.critical("Daemon not available on windows.")
+        else:
+            with daemon.DaemonContext(pidfile=lockfile.FileLock(pid_file)):
+                # set up logging; it's much easier to just set it up within the
+                # DaemonContext. Outside the daemoncontext requires a lot more work...
+                setup_logger(logfile, log_level)
+                logging.warn("Starting dhdynupdater...")
                 try:
-                    dh_dns.update_if_necessary()
-                    time.sleep(update_interval)
+                    pf = open(pid_file, 'w')
+                    pf.write("%s\n" % (os.getpid()))
+                    pf.close()
                 except:
-                    logging.critical("Exception in main loop: %s" % (sys.exc_info()[0]))
-                    logging.warn("Closing dhdynupdater...")
-                    logging.shutdown()
-                    sys.exit(0)
-                logging.warn("looping dhdynupdater main loop...")
+                    logging.critical("Exception in setting up pidfile: %s" % (sys.exc_info()[0]))
+                    sys.exit(6)
+                try:
+                    dh_dns = dhdns(api_key, api_url, local_hostname, configured_interfaces)
+                except:
+                    logging.critical("Exception in creating dh_dns: %s" % (sys.exc_info()[0]))
+                while True:
+                    logging.warn("Starting dhdynupdater main loop...")
+                    try:
+                        dh_dns.update_if_necessary()
+                        time.sleep(update_interval)
+                    except:
+                        logging.critical("Exception in main loop: %s" % (sys.exc_info()[0]))
+                        logging.warn("Closing dhdynupdater...")
+                        logging.shutdown()
+                        sys.exit(0)
+                    logging.warn("looping dhdynupdater main loop...")
     else:
         setup_logger(logfile, log_level)
         logging.warn("Starting dhdynupdater...")
-        dh_dns = dhdns(api_key, api_url, local_hostname, configured_interfaces)
+        dh_dns = dhdns(api_key, api_url, local_hostname, configured_interfaces, args.external_ip, external_url)
         dh_dns.update_if_necessary()
 
     logging.warn("Closing dhdynupdater...")

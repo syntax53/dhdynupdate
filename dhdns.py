@@ -35,7 +35,7 @@ import ipaddress
 import logging
 import os
 import sys
-
+import requests
 import http_access
 import interfaces
 
@@ -43,19 +43,39 @@ class dhdns():
     api_key = ""
     local_hostname = ""
 
-    def __init__(self, api_key, api_url, local_hostname, configured_interfaces):
+    def __init__(self, api_key, api_url, local_hostname, configured_interfaces, bExternal, external_url):
         """Initialize dnsupdate"""
         # Pull configuration from config_settings
         self.api_key = api_key
         self.local_hostname = local_hostname
         self.configured_interfaces = configured_interfaces
+        self.use_external = bExternal
         self.interface = interfaces.interfaces(self.configured_interfaces)
         self.prev_addresses = [ ipaddress.ip_address('127.0.0.1'), ipaddress.ip_address('::1') ]
+        
+        if self.use_external:
+            try:
+                response = requests.request('GET', external_url)
+                if response.status_code == 200:
+                    self.external_ip = ipaddress.ip_address(response.text)
+                    if self.external_ip.version == 4:
+                        logging.info("External IP address detected as: %s" % (self.external_ip))
+                    else:
+                        logging.critical("Error retrieving external IP.  Response:  %s" % (response.text))
+                        sys.exit()
+                else:
+                    logging.critical("Could not access external url. Status code: %s" % (response.status_code))
+                    sys.exit()
+            except:
+                logging.critical("Could not access external url: %s" % (external_url))
+                sys.exit()
+        
         # Set up http_accessor object.
         try:
             self.dreamhost_accessor = http_access.http_access(api_url)
         except KeyError as error:
             logging.critical("Could not set up DreamHost API communications. Error:  %s" % (error))
+            sys.exit()
 
     def update_if_necessary(self):
         """Main dæmon loop - watches for changes to IP addresses on the host
@@ -65,8 +85,18 @@ class dhdns():
         # IP addresses have changed.
         update_ipv6 = True
         update_ipv4 = True
+           
         logging.debug("Self.interface is:  %s" % (self.interface.addresses))
         self.interface.addresses = self.interface.get_if_addresses(self.configured_interfaces)
+        
+        if self.use_external:
+            update_ipv6 = False
+            #set all local address to the external IP
+            for i, naddress in enumerate(self.interface.addresses):
+                if naddress.version == 4:
+                    logging.debug("Overriding internal address with external address:  %s => %s" % (naddress, self.external_ip))
+                    self.interface.addresses[i] = self.external_ip
+                    
         for naddress in self.interface.addresses:
             logging.debug("New address:  %s" % (naddress))
             for paddress in self.prev_addresses:
@@ -86,7 +116,7 @@ class dhdns():
                     # Really not a very interesting metric, even on debug...
                     # logging.debug("Address types do not match: New %s != Old %s" % (naddress, paddress))
                     pass
-
+                    
         # If we have detected a changed IP address, update_addresses(), and
         # update the prev_addresses
         if update_ipv6 or update_ipv4:
@@ -94,7 +124,7 @@ class dhdns():
             self.prev_addresses = copy.copy(self.interface.addresses)
             logging.info("Address change detected; updating DreamHost")
             self.update_addresses()
-
+                
     def get_dh_dns_records(self):
         """Get the current DreamHost DNS records"""
         # Start by setting up a bit of data for the requests library.
