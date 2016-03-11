@@ -36,8 +36,8 @@ The `daemon` library **not** required as it is with the linux version (it's not 
 * Specify the location of the previous address file (`C:\Python34\_dhdynupdate\log\prev_addr.txt` for me).  Make sure the folder/file is writable.
 * See https://github.com/ttelford/dhdynupdate for getting your API key.
 * Modify `[your.domain.com]` to anything you want.  e.g. `[myroot.domain.com]`.
-* `api_key` = `<your DreamHost API key>`
-* `local_hostname` = `yourhost.toupdate.com`
+    * `api_key` = `<your DreamHost API key>`
+    * `local_hostname` = `yourhost.toupdate.com`
 * Once you have the command working and verify it's working via the log, just setup a windows task to execute the command at a set interval.
 
 # Command-line usage
