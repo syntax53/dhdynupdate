@@ -5,6 +5,7 @@ This is a windows fork of (https://github.com/ttelford/dhdynupdate).
 
 * Windows Support.
 * Ability to lookup your external IP and send that to dreamhost.
+* Save and restore previous addresses from file.
 
 ## Dependencies
 The `daemon` library **not** required as it is with the linux version (it's not supported under windows).  You can setup a scheduled task in windows instead.
