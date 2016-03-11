@@ -38,6 +38,7 @@ The `daemon` library **not** required as it is with the linux version (it's not 
 * Modify `[your.domain.com]` to anything you want.  e.g. `[myroot.domain.com]`.
 * `api_key` = `<your DreamHost API key>`
 * `local_hostname` = `yourhost.toupdate.com`
+* Once you have the command working and verify it's working via the log, just setup a windows task to execute the command at a set interval.
 
 # Command-line usage
 
