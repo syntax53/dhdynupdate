@@ -43,7 +43,7 @@ class dhdns():
     api_key = ""
     local_hostname = ""
 
-    def __init__(self, api_key, api_url, local_hostname, configured_interfaces, bExternal, external_url):
+    def __init__(self, api_key, api_url, local_hostname, configured_interfaces, bExternal, external_url, previous_v4_address, previous_v6_address):
         """Initialize dnsupdate"""
         # Pull configuration from config_settings
         self.api_key = api_key
@@ -51,7 +51,9 @@ class dhdns():
         self.configured_interfaces = configured_interfaces
         self.use_external = bExternal
         self.interface = interfaces.interfaces(self.configured_interfaces)
-        self.prev_addresses = [ ipaddress.ip_address('127.0.0.1'), ipaddress.ip_address('::1') ]
+        self.previous_v4_address = ipaddress.ip_address(previous_v4_address)
+        self.previous_v6_address = ipaddress.ip_address(previous_v6_address)
+        self.prev_addresses = [ self.previous_v4_address, self.previous_v6_address ]
         
         if self.use_external:
             try:
@@ -112,6 +114,10 @@ class dhdns():
                                     (naddress.version))
                 elif naddress.version == paddress.version:
                     logging.debug("New %s != Old %s" % (naddress, paddress))
+                    if naddress.version == 4:
+                        self.previous_v4_address = naddress
+                    else:
+                        self.previous_v6_address = naddress
                 else:
                     # Really not a very interesting metric, even on debug...
                     # logging.debug("Address types do not match: New %s != Old %s" % (naddress, paddress))
@@ -121,7 +127,7 @@ class dhdns():
         # update the prev_addresses
         if update_ipv6 or update_ipv4:
             logging.debug("Resetting prev addresses: %s = %s" % (self.prev_addresses, self.interface.addresses))
-            self.prev_addresses = copy.copy(self.interface.addresses)
+            self.prev_addresses = [ self.previous_v4_address, self.previous_v6_address ]
             logging.info("Address change detected; updating DreamHost")
             self.update_addresses()
                 

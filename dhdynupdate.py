@@ -33,6 +33,7 @@ import configparser
 import lockfile
 import logging
 import netifaces
+import ipaddress
 import os
 if not os.name == 'nt':
     import daemon
@@ -60,7 +61,47 @@ def setup_logger(logfile, log_level):
         logging.critical("Could not set up logging! Exiting!")
         sys.exit(2)
 
+previous_v4_address  = '127.0.0.1'
+previous_v6_address  = '::1'
+def setup_prev_addr_file(logfile):
+    global previous_v4_address
+    global previous_v6_address
+    bWrite = False
+    if os.path.isfile(logfile):
+        with open(logfile, "r") as ins:
+            lines = []
+            for line in ins:
+                lines.append(line)
+                
+        if len(lines) > 0:
+            if len(lines[0]) > 6:
+                previous_v4_address = lines[0].rstrip()
+                logging.debug("Previous V4 address loaded from file: %s" % (previous_v4_address))
+            else:
+                bWrite = True
+        else:
+            bWrite = True
+        
+        if len(lines) > 1:
+            if len(lines[1]) > 3:
+                previous_v6_address = lines[1].rstrip()
+                logging.debug("Previous V6 address loaded from file: %s" % (previous_v6_address))
+    else:
+        bWrite = True
+        
+    if bWrite:
+        logging.debug("Writing new prev_addr_file: %s, %s" % (previous_v4_address, previous_v6_address))
+        try:
+            fo = open(logfile, "w")
+            fo.write(previous_v4_address + "\n")
+            fo.write(previous_v6_address + "\n")
+            fo.close()
+        except:
+            logging.critical("Could not write previous address file: %s" % (logfile))
+        
 def main(argv=None):
+    global previous_v4_address
+    global previous_v6_address
     """Command line parser, begins DaemonContext for main loop"""
     if argv is None:
         argv = sys.argv
@@ -69,7 +110,7 @@ def main(argv=None):
     cmd_parser.add_argument("-d", "--daemon", action='store_true',
                             default=False, required=False,
                             dest="daemonize",
-                            help="Execute %(prog)s as a dæmon")
+                            help="Execute %(prog)s as a dæmon (does not work on windows)")
     cmd_parser.add_argument("--debug", action='store', type=str,
                             default="WARNING", required=False,
                             dest="log_level", metavar="lvl",
@@ -115,6 +156,7 @@ def main(argv=None):
         external_url = config["Global"]["external_url"]
         local_hostname = config[args.config_name]["local_hostname"]
         logfile = config["Global"]["log_file"]
+        prev_addr_file = config["Global"]["prev_addr_file"]
         update_interval = int(config["Global"]["update_interval"])
         pid_file = config["Global"]["pidfile"]
         for addr_type in supported_address_families:
@@ -133,7 +175,9 @@ def main(argv=None):
 #        logging.critical("Exception in parsing configuration settings: %s"
 #                         % (sys.exc_info()[0]))
         sys.exit(5)
-
+    
+    
+    
 #   When in doubt, do not run as a daemon. Daemon keeps stack traces from being
 #   printed, and you're left wondering why the dæmon is quitting.
     if args.daemonize:
@@ -144,6 +188,7 @@ def main(argv=None):
                 # set up logging; it's much easier to just set it up within the
                 # DaemonContext. Outside the daemoncontext requires a lot more work...
                 setup_logger(logfile, log_level)
+                setup_prev_addr_file(prev_addr_file)
                 logging.warn("Starting dhdynupdater...")
                 try:
                     pf = open(pid_file, 'w')
@@ -153,7 +198,7 @@ def main(argv=None):
                     logging.critical("Exception in setting up pidfile: %s" % (sys.exc_info()[0]))
                     sys.exit(6)
                 try:
-                    dh_dns = dhdns(api_key, api_url, local_hostname, configured_interfaces)
+                    dh_dns = dhdns(api_key, api_url, local_hostname, configured_interfaces, args.external_ip, external_url, previous_v4_address, previous_v6_address)
                 except:
                     logging.critical("Exception in creating dh_dns: %s" % (sys.exc_info()[0]))
                 while True:
@@ -169,9 +214,18 @@ def main(argv=None):
                     logging.warn("looping dhdynupdater main loop...")
     else:
         setup_logger(logfile, log_level)
+        setup_prev_addr_file(prev_addr_file)
         logging.warn("Starting dhdynupdater...")
-        dh_dns = dhdns(api_key, api_url, local_hostname, configured_interfaces, args.external_ip, external_url)
+        dh_dns = dhdns(api_key, api_url, local_hostname, configured_interfaces, args.external_ip, external_url, previous_v4_address, previous_v6_address)
         dh_dns.update_if_necessary()
+        if str(dh_dns.previous_v4_address) != previous_v4_address or str(dh_dns.previous_v6_address) != previous_v6_address:
+            try:
+                fo = open(prev_addr_file, "w")
+                fo.write(str(dh_dns.previous_v4_address) + "\n")
+                fo.write(str(dh_dns.previous_v6_address) + "\n")
+                fo.close()
+            except:
+                logging.critical("Could not write previous addresses to file: %s" % (logfile))
 
     logging.warn("Closing dhdynupdater...")
     logging.shutdown()
