@@ -33,6 +33,7 @@ The `daemon` library **not** required as it is with the linux version (it's not 
         * You can also browse to the following registry key which may be easier: `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkCards`. Verify you have the correct GUID (and the library is working) with `netifaces.ifaddresses('{GUID}')`.
 * Open `dhdynupdate.conf` and put your GUID next to the AF_INET entry.
 * Specify the location of the logfile (`C:\Python34\_dhdynupdate\log\dhdynupdate.log` for me).  Make sure the folder/file is writable.
+* Specify the location of the previous address file (`C:\Python34\_dhdynupdate\log\prev_addr.txt` for me).  Make sure the folder/file is writable.
 * See https://github.com/ttelford/dhdynupdate for getting your API key.
 * Modify `[your.domain.com]` to anything you want.  e.g. `[myroot.domain.com]`.
 * `api_key` = `<your DreamHost API key>`
