@@ -56,6 +56,9 @@ class dhdns():
         self.prev_addresses = [ self.previous_v4_address, self.previous_v6_address ]
         
         if self.use_external:
+            if logging.getLogger().getEffectiveLevel() == logging.INFO:
+                logging.getLogger("requests").setLevel(logging.WARNING)
+                
             try:
                 response = requests.request('GET', external_url)
                 if response.status_code == 200:
@@ -71,7 +74,10 @@ class dhdns():
             except:
                 logging.critical("Could not access external url: %s" % (external_url))
                 sys.exit()
-        
+            
+            if logging.getLogger().getEffectiveLevel() == logging.INFO:
+                logging.getLogger("requests").setLevel(logging.getLogger().getEffectiveLevel())
+            
         # Set up http_accessor object.
         try:
             self.dreamhost_accessor = http_access.http_access(api_url)
@@ -85,52 +91,57 @@ class dhdns():
         triggered."""
         # We really only want to update_addresses() if one or more of our
         # IP addresses have changed.
-        update_ipv6 = True
-        update_ipv4 = True
-           
+        update_ipv6 = False
+        update_ipv4 = False
+        new_v4_address = self.previous_v4_address
+        new_v6_address = self.previous_v6_address
+        
         logging.debug("Self.interface is:  %s" % (self.interface.addresses))
         self.interface.addresses = self.interface.get_if_addresses(self.configured_interfaces)
         
         if self.use_external:
-            update_ipv6 = False
             #set all local address to the external IP
             for i, naddress in enumerate(self.interface.addresses):
                 if naddress.version == 4:
-                    logging.debug("Overriding internal address with external address:  %s => %s" % (naddress, self.external_ip))
+                    logging.info("Overriding internal address with external address:  %s => %s" % (naddress, self.external_ip))
                     self.interface.addresses[i] = self.external_ip
-                    
+                
         for naddress in self.interface.addresses:
-            logging.debug("New address:  %s" % (naddress))
-            for paddress in self.prev_addresses:
-                logging.debug("Previous address:  %s" % (paddress))
-                if naddress == paddress:
-                    logging.debug("New %s = Old %s" % (naddress, paddress))
-                    if naddress.version == 6:
-                        update_ipv6 = False
-                    elif naddress.version == 4:
-                        update_ipv4 = False
-                    else:
-                        logging.warn("Error in address version retrieved:  %s" %
-                                    (naddress.version))
-                elif naddress.version == paddress.version:
-                    logging.debug("New %s != Old %s" % (naddress, paddress))
-                    if naddress.version == 4:
-                        self.previous_v4_address = naddress
-                    else:
-                        self.previous_v6_address = naddress
-                else:
-                    # Really not a very interesting metric, even on debug...
-                    # logging.debug("Address types do not match: New %s != Old %s" % (naddress, paddress))
-                    pass
+            logging.debug("Current address:  %s" % (naddress))
+            if naddress.version == 4:
+                if not self.previous_v4_address == naddress:
+                    update_ipv4 = True
+                    new_v4_address = naddress
+                    
+            elif naddress.version == 6:
+                if not self.previous_v6_address == naddress:
+                    update_ipv6 = True
+                    new_v6_address = naddress
+            
+            else:
+                logging.warn("Error in address version retrieved:  %s" % (naddress.version))
                     
         # If we have detected a changed IP address, update_addresses(), and
         # update the prev_addresses
         if update_ipv6 or update_ipv4:
-            logging.debug("Resetting prev addresses: %s = %s" % (self.prev_addresses, self.interface.addresses))
+            logging.debug("Updating prev addresses: %s = %s" % (self.previous_v4_address, self.previous_v6_address))
             self.prev_addresses = [ self.previous_v4_address, self.previous_v6_address ]
+            
             logging.info("Address change detected; updating DreamHost")
-            self.update_addresses()
+            
+            if not self.previous_v4_address == new_v4_address:
+                logging.info("ipv4: New %s ... Old %s" % (new_v4_address, self.previous_v4_address))
+                self.previous_v4_address = new_v4_address
+            
+            if not self.previous_v6_address == new_v6_address:
+                logging.info("ipv6: New %s ... Old %s" % (new_v6_address, self.previous_v6_address))
+                self.previous_v6_address = new_v6_address
                 
+            self.update_addresses()
+        
+        else:
+            logging.info("no address change detected")
+            
     def get_dh_dns_records(self):
         """Get the current DreamHost DNS records"""
         # Start by setting up a bit of data for the requests library.

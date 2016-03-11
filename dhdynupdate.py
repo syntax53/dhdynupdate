@@ -45,7 +45,7 @@ def setup_logger(logfile, log_level):
     """Does logging setup, using python logging"""
     try:
         logger = logging.basicConfig(
-                 format='%(levelname)s:%(message)s',
+                 format='%(asctime)s %(levelname)s: %(message)s',
                  filename = logfile,
                  filemode='w',
                  level=log_level)
@@ -76,7 +76,7 @@ def setup_prev_addr_file(logfile):
         if len(lines) > 0:
             if len(lines[0]) > 6:
                 previous_v4_address = lines[0].rstrip()
-                logging.debug("Previous V4 address loaded from file: %s" % (previous_v4_address))
+                logging.info("Previous V4 address loaded from file: %s" % (previous_v4_address))
             else:
                 bWrite = True
         else:
@@ -85,7 +85,7 @@ def setup_prev_addr_file(logfile):
         if len(lines) > 1:
             if len(lines[1]) > 3:
                 previous_v6_address = lines[1].rstrip()
-                logging.debug("Previous V6 address loaded from file: %s" % (previous_v6_address))
+                logging.info("Previous V6 address loaded from file: %s" % (previous_v6_address))
     else:
         bWrite = True
         
@@ -188,8 +188,8 @@ def main(argv=None):
                 # set up logging; it's much easier to just set it up within the
                 # DaemonContext. Outside the daemoncontext requires a lot more work...
                 setup_logger(logfile, log_level)
-                setup_prev_addr_file(prev_addr_file)
                 logging.warn("Starting dhdynupdater...")
+                setup_prev_addr_file(prev_addr_file)
                 try:
                     pf = open(pid_file, 'w')
                     pf.write("%s\n" % (os.getpid()))
@@ -214,8 +214,8 @@ def main(argv=None):
                     logging.warn("looping dhdynupdater main loop...")
     else:
         setup_logger(logfile, log_level)
-        setup_prev_addr_file(prev_addr_file)
         logging.warn("Starting dhdynupdater...")
+        setup_prev_addr_file(prev_addr_file)
         dh_dns = dhdns(api_key, api_url, local_hostname, configured_interfaces, args.external_ip, external_url, previous_v4_address, previous_v6_address)
         dh_dns.update_if_necessary()
         if str(dh_dns.previous_v4_address) != previous_v4_address or str(dh_dns.previous_v6_address) != previous_v6_address:
