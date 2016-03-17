@@ -41,13 +41,17 @@ import time
 import sys
 from dhdns import dhdns
 
-def setup_logger(logfile, log_level):
+def setup_logger(logfile, log_level, append):
     """Does logging setup, using python logging"""
+    sFileMode = 'w'
+    if append:
+        sFileMode = 'a'
+    
     try:
         logger = logging.basicConfig(
                  format='%(asctime)s %(levelname)s: %(message)s',
                  filename = logfile,
-                 filemode='w',
+                 filemode=sFileMode,
                  level=log_level)
     except PermissionError as error:
         logging.critical("%s" % (error))
@@ -124,6 +128,10 @@ def main(argv=None):
                             default=True, required=False,
                             dest="external_ip",
                             help="Use external address instead of internal")
+    cmd_parser.add_argument("-a", "--append", action='store_true',
+                            default=False, required=False,
+                            dest="append_log",
+                            help="Append log instead of overwrite log")
     args = cmd_parser.parse_args()
 
     # read configuration from file
@@ -187,7 +195,7 @@ def main(argv=None):
             with daemon.DaemonContext(pidfile=lockfile.FileLock(pid_file)):
                 # set up logging; it's much easier to just set it up within the
                 # DaemonContext. Outside the daemoncontext requires a lot more work...
-                setup_logger(logfile, log_level)
+                setup_logger(logfile, log_level, args.append_log)
                 logging.warn("Starting dhdynupdater...")
                 setup_prev_addr_file(prev_addr_file)
                 try:
@@ -213,7 +221,7 @@ def main(argv=None):
                         sys.exit(0)
                     logging.warn("looping dhdynupdater main loop...")
     else:
-        setup_logger(logfile, log_level)
+        setup_logger(logfile, log_level, args.append_log)
         logging.warn("Starting dhdynupdater...")
         setup_prev_addr_file(prev_addr_file)
         dh_dns = dhdns(api_key, api_url, local_hostname, configured_interfaces, args.external_ip, external_url, previous_v4_address, previous_v6_address)
