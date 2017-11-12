@@ -96,7 +96,12 @@ class dhdns():
         new_v4_address = self.previous_v4_address
         new_v6_address = self.previous_v6_address
         
-        logging.debug("Self.interface is:  %s" % (self.interface.addresses))
+        if not self.interface.addresses:
+            logging.critical("Self.interface.addresses is empty!")
+            sys.exit(8)
+        else:
+            logging.debug("Self.interface is:  %s" % (self.interface.addresses))
+        
         self.interface.addresses = self.interface.get_if_addresses(self.configured_interfaces)
         
         if self.use_external:
@@ -124,7 +129,7 @@ class dhdns():
         # If we have detected a changed IP address, update_addresses(), and
         # update the prev_addresses
         if update_ipv6 or update_ipv4:
-            logging.debug("Updating prev addresses: %s = %s" % (self.previous_v4_address, self.previous_v6_address))
+            logging.debug("Updating prev addresses: %s/v4, %s/v6" % (self.previous_v4_address, self.previous_v6_address))
             self.prev_addresses = [ self.previous_v4_address, self.previous_v6_address ]
             
             logging.info("Address change detected; updating DreamHost")
