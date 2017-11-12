@@ -110,7 +110,7 @@ class interfaces():
             if address_retrieved:
                 new_address = ipaddress.ip_address(new_address)
                 addresses.append(new_address)
-                logging.info("The current %s Address on %s is: %s"
+                logging.debug("The current %s Address on %s is: %s"
                              % (addr_type, interfaces[addr_type], new_address))
         return addresses
 
