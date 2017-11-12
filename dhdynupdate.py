@@ -39,8 +39,8 @@ if not os.name == 'nt':
     import daemon
 import time
 import sys
-from dhdns import dhdns
 
+from dhdns import dhdns
 def setup_logger(logfile, log_level, append):
     """Does logging setup, using python logging"""
     sFileMode = 'w'
